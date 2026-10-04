@@ -1,0 +1,6 @@
+{
+  "name": "MAUREEN CASHFLOW",
+  "description": "Modern POS cash management and attendant daily reconciliation system for agent banking businesses.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

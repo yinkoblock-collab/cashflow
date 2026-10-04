@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  html {
+    /* Prevent unwanted pull-to-refresh bounce while scrolling inside app */
+    overscroll-behavior-y: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Prevent iOS Safari automatic zoom on inputs when focused */
+  @media screen and (max-width: 768px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
+/* Safe area inset helpers for modern notch and gesture navigation */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-nav-safe {
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Custom scrollbar for transaction tables & mobile drawer */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Touch active feedback utility */
+.active-press {
+  transition: transform 0.12s ease-out, opacity 0.12s ease-out;
+}
+.active-press:active {
+  transform: scale(0.96);
+  opacity: 0.88;
+}

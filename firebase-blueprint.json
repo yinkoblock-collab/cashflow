@@ -1,0 +1,198 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document representing POS attendant or business owner",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "fullName": { "type": "string", "maxLength": 120 },
+        "phoneNumber": { "type": "string", "maxLength": 30 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "fullName", "businessId"]
+    },
+    "Business": {
+      "title": "Business",
+      "description": "POS business profile and live balance state",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 120 },
+        "ownerId": { "type": "string", "maxLength": 128 },
+        "currency": { "type": "string", "maxLength": 10 },
+        "cashInDrawer": { "type": "number" },
+        "terminalBalance": { "type": "number" },
+        "currentSessionId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "ownerId", "cashInDrawer", "terminalBalance"]
+    },
+    "DailySession": {
+      "title": "DailySession",
+      "description": "POS attendant daily business shift session from open to close",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "attendantId": { "type": "string", "maxLength": 128 },
+        "attendantName": { "type": "string", "maxLength": 120 },
+        "status": { "type": "string", "enum": ["open", "closed"] },
+        "openedAt": { "type": "string", "format": "date-time" },
+        "closedAt": { "type": "string", "format": "date-time" },
+        "openingCash": { "type": "number" },
+        "openingTerminalBalance": { "type": "number" },
+        "closingExpectedCash": { "type": "number" },
+        "closingActualCash": { "type": "number" },
+        "cashDifference": { "type": "number" },
+        "closingExpectedTerminal": { "type": "number" },
+        "closingActualTerminal": { "type": "number" },
+        "terminalDifference": { "type": "number" },
+        "overallDifference": { "type": "number" },
+        "differenceExplanation": { "type": "string", "maxLength": 500 },
+        "closingNotes": { "type": "string", "maxLength": 500 },
+        "totalTransactionCount": { "type": "number" },
+        "totalTransactionValue": { "type": "number" },
+        "totalEarnings": { "type": "number" },
+        "totalExpenses": { "type": "number" },
+        "netEarnings": { "type": "number" }
+      },
+      "required": ["id", "businessId", "attendantId", "status", "openingCash", "openingTerminalBalance"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Individual customer POS transaction (withdrawal, transfer, bills, etc.)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "attendantId": { "type": "string", "maxLength": 128 },
+        "typeId": { "type": "string", "maxLength": 64 },
+        "typeName": { "type": "string", "maxLength": 64 },
+        "customerName": { "type": "string", "maxLength": 100 },
+        "customerPhone": { "type": "string", "maxLength": 30 },
+        "transactionAmount": { "type": "number" },
+        "charge": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paymentMethod": { "type": "string", "maxLength": 64 },
+        "cashDelta": { "type": "number" },
+        "terminalDelta": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "date": { "type": "string", "maxLength": 12 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "businessId", "typeId", "typeName", "transactionAmount", "charge", "totalAmount"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Daily operational expense paid from cash or terminal/bank",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "attendantId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "amount": { "type": "number" },
+        "paymentSource": { "type": "string", "enum": ["cash", "terminal_bank"] },
+        "notes": { "type": "string", "maxLength": 500 },
+        "date": { "type": "string", "maxLength": 12 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "businessId", "name", "amount", "paymentSource"]
+    },
+    "Debt": {
+      "title": "Debt",
+      "description": "Customer credit/debt tracking with status and outstanding amount",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "sessionId": { "type": "string", "maxLength": 128 },
+        "debtorName": { "type": "string", "maxLength": 120 },
+        "debtorPhone": { "type": "string", "maxLength": 30 },
+        "initialAmount": { "type": "number" },
+        "amountPaid": { "type": "number" },
+        "outstandingAmount": { "type": "number" },
+        "reason": { "type": "string", "maxLength": 300 },
+        "status": { "type": "string", "enum": ["unpaid", "partially_paid", "paid"] },
+        "date": { "type": "string", "maxLength": 12 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "businessId", "debtorName", "initialAmount", "outstandingAmount", "status"]
+    },
+    "DebtPayment": {
+      "title": "DebtPayment",
+      "description": "Partial or full repayment of an existing customer debt",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "debtId": { "type": "string", "maxLength": 128 },
+        "debtorName": { "type": "string", "maxLength": 120 },
+        "amount": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cash", "terminal_bank"] },
+        "notes": { "type": "string", "maxLength": 300 },
+        "date": { "type": "string", "maxLength": 12 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "businessId", "debtId", "amount", "paymentMethod"]
+    },
+    "TransactionTypeConfig": {
+      "title": "TransactionTypeConfig",
+      "description": "Configurable transaction types for the business",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "businessId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 80 },
+        "category": { "type": "string", "maxLength": 50 },
+        "defaultPaymentMethod": { "type": "string", "maxLength": 50 },
+        "isCustom": { "type": "boolean" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "businessId", "name", "category", "isActive"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles locked to the authenticated user ID"
+    },
+    "/businesses/{businessId}": {
+      "schema": { "$ref": "#/entities/Business" },
+      "description": "Business documents and live drawer/terminal balances"
+    },
+    "/dailySessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/DailySession" },
+      "description": "Daily open and close cashier shifts"
+    },
+    "/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Customer transactions recorded by POS attendant"
+    },
+    "/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/Expense" },
+      "description": "Daily operational expenses recorded"
+    },
+    "/debts/{debtId}": {
+      "schema": { "$ref": "#/entities/Debt" },
+      "description": "Customer credit records"
+    },
+    "/debtPayments/{paymentId}": {
+      "schema": { "$ref": "#/entities/DebtPayment" },
+      "description": "Repayments logged against debts"
+    },
+    "/transactionTypes/{typeId}": {
+      "schema": { "$ref": "#/entities/TransactionTypeConfig" },
+      "description": "Configurable transaction categories and custom types"
+    }
+  }
+}

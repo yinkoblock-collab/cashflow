@@ -1,0 +1,179 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function belongsToBusiness(businessId) {
+      return isSignedIn() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         getUserData().businessId == businessId) ||
+        (exists(/databases/$(database)/documents/businesses/$(businessId)) &&
+         get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid)
+      );
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        incoming().uid == userId &&
+        incoming().email is string && incoming().email.size() <= 256 &&
+        incoming().fullName is string && incoming().fullName.size() <= 120 &&
+        incoming().businessId is string && incoming().businessId.size() <= 128;
+      allow update: if isOwner(userId) &&
+        incoming().uid == existing().uid &&
+        incoming().businessId == existing().businessId;
+      allow delete: if false;
+      allow list: if false;
+    }
+
+    // Businesses Collection
+    match /businesses/{businessId} {
+      allow get: if isSignedIn() && belongsToBusiness(businessId);
+      allow create: if isSignedIn() &&
+        isValidId(businessId) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().name is string && incoming().name.size() <= 120 &&
+        incoming().cashInDrawer is number &&
+        incoming().terminalBalance is number;
+      allow update: if isSignedIn() &&
+        belongsToBusiness(businessId) &&
+        incoming().id == existing().id &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().cashInDrawer is number &&
+        incoming().terminalBalance is number;
+      allow delete: if false;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Daily Sessions Collection
+    match /dailySessions/{sessionId} {
+      allow get: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow list: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow create: if isSignedIn() &&
+        isValidId(sessionId) &&
+        belongsToBusiness(incoming().businessId) &&
+        incoming().status in ['open', 'closed'] &&
+        incoming().openingCash is number &&
+        incoming().openingTerminalBalance is number;
+      allow update: if isSignedIn() &&
+        belongsToBusiness(existing().businessId) &&
+        incoming().businessId == existing().businessId &&
+        (
+          // Cannot modify if already closed unless keeping closed
+          existing().status != 'closed' || incoming().status == 'closed'
+        );
+      allow delete: if false;
+    }
+
+    // Transactions Collection
+    match /transactions/{transactionId} {
+      allow get: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow list: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow create: if isSignedIn() &&
+        isValidId(transactionId) &&
+        belongsToBusiness(incoming().businessId) &&
+        incoming().transactionAmount is number &&
+        incoming().charge is number &&
+        incoming().totalAmount is number &&
+        incoming().typeName is string && incoming().typeName.size() <= 64;
+      allow update: if isSignedIn() &&
+        belongsToBusiness(existing().businessId) &&
+        incoming().businessId == existing().businessId &&
+        incoming().id == existing().id;
+      allow delete: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+    }
+
+    // Expenses Collection
+    match /expenses/{expenseId} {
+      allow get: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow list: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow create: if isSignedIn() &&
+        isValidId(expenseId) &&
+        belongsToBusiness(incoming().businessId) &&
+        incoming().amount is number &&
+        incoming().name is string && incoming().name.size() <= 150 &&
+        incoming().paymentSource in ['cash', 'terminal_bank'];
+      allow update: if isSignedIn() &&
+        belongsToBusiness(existing().businessId) &&
+        incoming().businessId == existing().businessId;
+      allow delete: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+    }
+
+    // Debts Collection
+    match /debts/{debtId} {
+      allow get: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow list: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow create: if isSignedIn() &&
+        isValidId(debtId) &&
+        belongsToBusiness(incoming().businessId) &&
+        incoming().debtorName is string && incoming().debtorName.size() <= 120 &&
+        incoming().initialAmount is number &&
+        incoming().outstandingAmount is number &&
+        incoming().status in ['unpaid', 'partially_paid', 'paid'];
+      allow update: if isSignedIn() &&
+        belongsToBusiness(existing().businessId) &&
+        incoming().businessId == existing().businessId;
+      allow delete: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+    }
+
+    // Debt Payments Collection
+    match /debtPayments/{paymentId} {
+      allow get: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow list: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow create: if isSignedIn() &&
+        isValidId(paymentId) &&
+        belongsToBusiness(incoming().businessId) &&
+        incoming().amount is number &&
+        incoming().paymentMethod in ['cash', 'terminal_bank'];
+      allow update: if isSignedIn() &&
+        belongsToBusiness(existing().businessId) &&
+        incoming().businessId == existing().businessId;
+      allow delete: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+    }
+
+    // Transaction Types Collection
+    match /transactionTypes/{typeId} {
+      allow get: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow list: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+      allow create: if isSignedIn() &&
+        isValidId(typeId) &&
+        belongsToBusiness(incoming().businessId) &&
+        incoming().name is string && incoming().name.size() <= 80;
+      allow update: if isSignedIn() &&
+        belongsToBusiness(existing().businessId) &&
+        incoming().businessId == existing().businessId;
+      allow delete: if isSignedIn() && belongsToBusiness(resource.data.businessId);
+    }
+  }
+}
